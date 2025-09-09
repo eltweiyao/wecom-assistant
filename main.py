@@ -85,6 +85,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
         try:
             # 解密消息
             decrypted_message = crypto.decrypt_message(body, signature, timestamp, nonce)
+            print(f"--- [decrypted_message]: {decrypted_message} ---")
             # 解析 XML 消息为 wechatpy 的消息对象
             msg = parse_message(decrypted_message)
             print(f"--- [Received Message] Type: {msg.type}, User: {msg.source} ---")
