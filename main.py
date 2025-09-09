@@ -19,10 +19,11 @@ def extract_content(msg, output_contents: list):
         output_contents.append(f"{user_id}发送了一条消息，content是: {msg['text']['content']}")
     elif msg['msgtype'] in ['image', 'video', 'voice', 'file']:
         # 获取媒体文件的临时 URL
-        media_id = msg['media_id']
+
+        media_id = msg.get(msg['msgtype']).get('media_id')
         media_url = get_media_url(media_id)
         # 格式化输入，让 Agent 知道这是一个媒体文件
-        output_contents.append(f"{user_id}发送了一个{msg.type}，URL是: {media_url}")
+        output_contents.append(f"{user_id}发送了一个{msg['msgtype']}，URL是: {media_url}")
         print(f"--- Generated Media URL: {media_url} ---")
     elif msg.type == 'merged_msg':
         merged_msg_list = getattr(msg, 'merged_msg', [])
@@ -142,9 +143,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
 if __name__ == "__main__":
     # 启动服务器
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-# if __name__ == '__main__':
-#     latest_msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENCAR4Bff6e2ysYVTQyvjobK3P2d8M5bkqTAQwWUGacGEVr')
+#     latest_msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENCApfZLHy43M7auvixiHozbAPiGKqMizbagyDDK1tvBe5Y')
 #     output_lines = []
 #     [extract_content(msg, output_lines) for msg in latest_msg_list]
 #     print(output_lines)
