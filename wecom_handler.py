@@ -60,8 +60,8 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
         # 获取最新的会话消息
         latest_msg_list = []
         for msg in reversed(msg_list):
-            if msg.type == 'event':
-                if msg.event == 'enter_session':
+            if msg.msgtype == 'event':
+                if msg.event_type == 'enter_session':
                     break
                 else:
                     continue
