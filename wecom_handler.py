@@ -1,7 +1,7 @@
 from wechatpy.enterprise import WeChatClient, events
 from wechatpy.enterprise.crypto import WeChatCrypto
-from wechatpy.enterprise.events import register_event, BaseEvent
-from wechatpy.fields import IntegerField
+from wechatpy.enterprise.events import register_event
+from wechatpy.events import BaseEvent
 
 import config
 
@@ -94,7 +94,7 @@ def send_kf_message(open_kfid: str, touser: str, msg_content: str):
     print(f"Sent kf message: {response}")
 
 @register_event('kf_msg_or_event')
-class KfMsgOrEvent(events.BaseEvent):
+class KfMsgOrEvent(BaseEvent):
     """
     客服消息或事件
     详情请参阅
