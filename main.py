@@ -107,8 +107,6 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                         if msg['msgtype'] == 'event':
                             if msg['event_type'] == 'enter_session':
                                 break
-                            else:
-                                continue
                         latest_msg_list.append(msg)
                     # 2. 格式化历史消息为 LLM 的输入
                     [extract_content(msg, user_input_contents) for msg in latest_msg_list[::-1]]
@@ -122,14 +120,14 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                 user_input_contents.append(f"{user_id}发送了一个{msg.type}，URL是: {get_media_url(msg.media_id)}")
             else:
                 # 其他类型的消息暂不处理，直接回复
-                client.message.send_text(config.WECOM_AGENT_ID, msg.source, "我暂时无法处理这种类型的消息。")
+                client.message.send_text(config.WECOM_AGENT_ID, user_id, "我暂时无法处理这种类型的消息。")
                 return Response(status_code=200)
 
             # 异步处理消息
             background_tasks.add_task(process_messages, user_input_contents, user_id, config.WECOM_AGENT_ID, open_kf_id)
 
             # 立即返回 200 OK 响应给企业微信服务器
-            print(f"--- [Immediate Response] Sent 200 OK for user: {msg.source}. Task queued. ---")
+            print(f"--- [Immediate Response] Sent 200 OK for user: {user_id}. Task queued. ---")
             return Response(status_code=200)
 
         except InvalidSignatureException:
