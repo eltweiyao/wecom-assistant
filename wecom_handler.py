@@ -51,7 +51,8 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
             "kf/sync_msg",
             data={
                 "open_kfid": open_kfid,
-                "token": token
+                "token": token,
+                "limit": 20
             }
         )
         # wechatpy 会在 API 返回错误码时自动抛出异常，所以这里无需检查 errcode
@@ -68,7 +69,7 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
                     continue
             latest_msg_list.append(msg)
 
-        return latest_msg_list.reverse() or []
+        return latest_msg_list[::-1]
     except Exception as e:
         print(f"Failed to sync kf messages: {e}")
         return []
@@ -106,5 +107,3 @@ class KfMsgOrEvent(BaseEvent):
     token = StringField('Token')
     open_kf_id = StringField('OpenKfId')
 
-if __name__ == '__main__':
-    sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENC9dwENX5A5GTZjRrXN5zeX5CcjN4HMAmdfZ6rZkjEK821')

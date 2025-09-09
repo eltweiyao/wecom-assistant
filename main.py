@@ -14,7 +14,7 @@ app = FastAPI()
 
 
 def extract_content(msg, output_contents: list):
-    user_id = getattr(msg, 'sender_name', getattr(msg, 'external_userid', msg.source))
+    user_id = msg.get('sender_name') or msg.get('external_userid')
     if msg['msgtype'] == 'text':
         output_contents.append(f"{user_id}发送了一条消息，content是: {msg['text']['content']}")
     elif msg['msgtype'] in ['image', 'video', 'voice', 'file']:
@@ -135,3 +135,9 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
 if __name__ == "__main__":
     # 启动服务器
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# if __name__ == '__main__':
+#     latest_msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENCAR4Bff6e2ysYVTQyvjobK3P2d8M5bkqTAQwWUGacGEVr')
+#     output_lines = []
+#     [extract_content(msg, output_lines) for msg in latest_msg_list]
+#     print(output_lines)
