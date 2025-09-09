@@ -1,3 +1,5 @@
+import asyncio
+
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from wechatpy.enterprise import parse_message
@@ -46,30 +48,8 @@ async def wechat_callback(request: Request):
             # 解析 XML 消息为 wechatpy 的消息对象
             msg = parse_message(decrypted_message)
             print(f"--- [Received Message] Type: {msg.type}, User: {msg.source} ---")
-
-            user_input = ""
-            if msg.type == 'text':
-                user_input = msg.content
-            elif msg.type in ['image', 'video', 'voice', 'file']:
-                # 获取媒体文件的临时 URL
-                media_id = msg.media_id
-                media_url = get_media_url(media_id)
-                # 格式化输入，让 Agent 知道这是一个媒体文件
-                user_input = f"用户发送了一个{msg.type}，URL是: {media_url}"
-                print(f"--- Generated Media URL: {media_url} ---")
-            else:
-                # 其他类型的消息暂不处理，直接回复
-                client.message.send_text(config.WECOM_AGENT_ID, msg.source, "我暂时无法处理这种类型的消息。")
-                return Response(status_code=200)
-
-            # 调用 Agent 获取智能回复
-            agent_response = await invoke_agent(user_input)
-
-            print(f"--- [Agent Response]: {agent_response} ---")
-
-            # 将 Agent 的回复发送给用户
-            client.message.send_text(config.WECOM_AGENT_ID, msg.source, agent_response)
-
+            #异步处理消息
+            asyncio.run(process_wecom_message(msg))
             # 必须返回 200 OK，否则企业微信会重试
             return Response(status_code=200)
 
@@ -79,6 +59,30 @@ async def wechat_callback(request: Request):
         except Exception as e:
             print(f"处理消息时发生错误: {e}")
             return Response(status_code=500)
+    return None
+
+async def process_wecom_message(msg):
+    if msg.type == 'text':
+        user_input = f"用户发送了一条消息，content是: {msg.content}"
+    elif msg.type in ['image', 'video', 'voice', 'file']:
+        # 获取媒体文件的临时 URL
+        media_id = msg.media_id
+        media_url = get_media_url(media_id)
+        # 格式化输入，让 Agent 知道这是一个媒体文件
+        user_input = f"用户发送了一个{msg.type}，URL是: {media_url}"
+        print(f"--- Generated Media URL: {media_url} ---")
+    else:
+        # 其他类型的消息暂不处理，直接回复
+        client.message.send_text(config.WECOM_AGENT_ID, msg.source, "我暂时无法处理这种类型的消息。")
+        return Response(status_code=200)
+
+    # 调用 Agent 获取智能回复
+    agent_response = await invoke_agent(user_input)
+
+    print(f"--- [Agent Response]: {agent_response} ---")
+
+    # 将 Agent 的回复发送给用户
+    client.message.send_text(config.WECOM_AGENT_ID, msg.source, agent_response)
     return None
 
 
