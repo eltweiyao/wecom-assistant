@@ -51,15 +51,20 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
             "kf/sync_msg",
             data={
                 "open_kfid": open_kfid,
-                "token": token,
-                "limit": 20
+                "token": token
             }
         )
         # wechatpy 会在 API 返回错误码时自动抛出异常，所以这里无需检查 errcode
         msg_list = response.get("msg_list", [])
         print(f"Successfully synced {len(msg_list)} messages.")
         print(f"msg_list: {msg_list}")
-        return msg_list
+        latest_msg_list = []
+        for msg in reversed(msg_list):
+            latest_msg_list.append(msg)
+            if msg['msgtype'] == 'event':
+                if msg['event']['event_type'] == 'enter_session':
+                    break
+        return latest_msg_list[::-1]
     except Exception as e:
         print(f"Failed to sync kf messages: {e}")
         return []

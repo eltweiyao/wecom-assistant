@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import uvicorn
 from fastapi import FastAPI, Request, Response, BackgroundTasks
@@ -13,21 +14,24 @@ from agent import invoke_agent
 app = FastAPI()
 
 
-def extract_content(msg, output_contents: list):
-    user_id = msg.get('sender_name') or msg.get('external_userid')
+def extract_content(msg, output_contents: list, sender_name: str = None):
+
+    user_id = sender_name or msg.get('sender_name') or msg.get('external_userid')
     if msg['msgtype'] == 'text':
-        output_contents.append(f"{user_id}发送了一条消息，content是: {msg['text']['content']}")
+        output_contents.append(f"{user_id} 发送了一条消息，content是: {msg['text']['content']}")
     elif msg['msgtype'] in ['image', 'video', 'voice', 'file']:
         # 获取媒体文件的临时 URL
-
         media_id = msg.get(msg['msgtype']).get('media_id')
         media_url = get_media_url(media_id)
         # 格式化输入，让 Agent 知道这是一个媒体文件
-        output_contents.append(f"{user_id}发送了一个{msg['msgtype']}，URL是: {media_url}")
+        output_contents.append(f"{user_id} 发送了一个{msg['msgtype']}，URL是: {media_url}")
         print(f"--- Generated Media URL: {media_url} ---")
-    elif msg.type == 'merged_msg':
-        merged_msg_list = getattr(msg, 'merged_msg', [])
-        [extract_content(msg, output_contents) for msg in merged_msg_list]
+    elif msg['msgtype'] == 'event' and msg['event']['event_type'] == 'enter_session':
+        user_id = msg['event']['external_userid']
+        output_contents.append(f"{user_id} 进入会话")
+    elif msg['msgtype'] == 'merged_msg':
+        merged_msg_list = msg['merged_msg']['item']
+        [extract_content(json.loads(item['msg_content']), output_contents, item['sender_name']) for item in merged_msg_list]
 
 
 async def process_messages(user_input: list, user_id: str, agent_id: str, open_kfid: str):
@@ -103,12 +107,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                     msg_list = sync_kf_messages(open_kf_id, token)
                     user_id = msg_list[-1]['external_userid']
                     # 获取最新的会话消息
-                    latest_msg_list = []
-                    for msg in reversed(msg_list):
-                        if msg['msgtype'] == 'event':
-                            if msg['event_type'] == 'enter_session':
-                                break
-                        latest_msg_list.append(msg)
+
                     # 2. 格式化历史消息为 LLM 的输入
                     [extract_content(msg, user_input_contents) for msg in latest_msg_list[::-1]]
                 else:
@@ -116,9 +115,9 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                     print(f"--- [Event] Ignored event of type '{getattr(msg, 'event', 'unknown')}' with no token. ---")
                     return Response(status_code=200)
             elif msg.type == 'text':
-                user_input_contents.append(f"{user_id}发送了一条消息，content是: {msg.content}")
+                user_input_contents.append(f"{user_id} 发送了一条消息，content是: {msg.content}")
             elif msg.type in ['image', 'video', 'voice', 'file']:
-                user_input_contents.append(f"{user_id}发送了一个{msg.type}，URL是: {get_media_url(msg.media_id)}")
+                user_input_contents.append(f"{user_id} 发送了一个{msg.type}，URL是: {get_media_url(msg.media_id)}")
             else:
                 # 其他类型的消息暂不处理，直接回复
                 client.message.send_text(config.WECOM_AGENT_ID, user_id, "我暂时无法处理这种类型的消息。")
@@ -143,7 +142,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
 if __name__ == "__main__":
     # 启动服务器
     uvicorn.run(app, host="0.0.0.0", port=8000)
-#     latest_msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENCApfZLHy43M7auvixiHozbAPiGKqMizbagyDDK1tvBe5Y')
-#     output_lines = []
-#     [extract_content(msg, output_lines) for msg in latest_msg_list]
-#     print(output_lines)
+    # latest_msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENCFiHvZGBiGSvCo6T1h8soJkERuUupXoSqhVEpB4MWBA1j')
+    # output_lines = []
+    # [extract_content(msg, output_lines) for msg in latest_msg_list]
+    # print(output_lines)
