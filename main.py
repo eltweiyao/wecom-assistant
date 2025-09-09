@@ -100,7 +100,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                 if token:
                     # 1. 同步消息
                     msg_list = sync_kf_messages(open_kf_id, token)
-                    user_id = getattr(msg_list[-1], 'external_userid', user_id)
+                    user_id = msg_list[-1]['external_userid']
                     # 2. 格式化历史消息为 LLM 的输入
                     [extract_content(msg, user_input_contents) for msg in msg_list]
                 else:
