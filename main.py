@@ -14,7 +14,7 @@ app = FastAPI()
 
 
 def extract_content(msg, output_contents: list):
-    user_id = getattr(msg, 'external_userid', msg.source)
+    user_id = getattr(msg, 'sender_name', getattr(msg, 'external_userid', msg.source))
     if msg.type == 'text':
         output_contents.append(f"{user_id}发送了一条消息，content是: {msg.content}")
     elif msg.type in ['image', 'video', 'voice', 'file']:
@@ -88,18 +88,19 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
             print(f"--- [decrypted_message]: {decrypted_message} ---")
             # 解析 XML 消息为 wechatpy 的消息对象
             msg = parse_message(decrypted_message)
-            print(f"--- [Received Message] Type: {msg.type}, User: {msg.source}，Msg:{msg} ---")
-            open_kfid = getattr(msg, 'open_kfid', None)
-            user_id = getattr(msg, 'external_userid', msg.source)
+            print(f"--- [Received Message] Type: {msg.type}，Msg:{msg} ---")
+            open_kf_id = getattr(msg, 'OpenKfId', None)
+            user_id = msg.source
             # 异步处理消息
             user_input_contents = []
             if msg.type == 'event':
-                # 客服场景下的事件，通常带有 open_kfid 和 token
-                token = getattr(msg, 'token', None)
+                # 客服场景下的事件，通常带有 open_kf_id 和 token
+                token = getattr(msg, 'Token', None)
                 # 只有带 token 的事件才处理，这通常是用户进入会话等需要拉取上下文的事件
                 if token:
                     # 1. 同步消息
-                    msg_list = sync_kf_messages(open_kfid, token)
+                    msg_list = sync_kf_messages(open_kf_id, token)
+                    user_id = getattr(msg_list[-1], 'external_userid', user_id)
                     # 2. 格式化历史消息为 LLM 的输入
                     [extract_content(msg, user_input_contents) for msg in msg_list]
                 else:
@@ -114,7 +115,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                 return Response(status_code=200)
 
             # 异步处理消息
-            background_tasks.add_task(process_messages, user_input_contents, user_id, config.WECOM_AGENT_ID, open_kfid)
+            background_tasks.add_task(process_messages, user_input_contents, user_id, config.WECOM_AGENT_ID, open_kf_id)
 
             # 立即返回 200 OK 响应给企业微信服务器
             print(f"--- [Immediate Response] Sent 200 OK for user: {msg.source}. Task queued. ---")
