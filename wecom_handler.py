@@ -64,7 +64,7 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
             if msg['msgtype'] == 'event':
                 if msg['event']['event_type'] == 'enter_session':
                     break
-        return latest_msg_list[::-1]
+        return latest_msg_list[-5:][::-1]
     except Exception as e:
         print(f"Failed to sync kf messages: {e}")
         return []
