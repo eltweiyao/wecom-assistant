@@ -88,7 +88,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
             print(f"--- [decrypted_message]: {decrypted_message} ---")
             # 解析 XML 消息为 wechatpy 的消息对象
             msg = parse_message(decrypted_message)
-            print(f"--- [Received Message] Type: {msg.type}, User: {msg.source} ---")
+            print(f"--- [Received Message] Type: {msg.type}, User: {msg.source}，Msg:{msg} ---")
             open_kfid = getattr(msg, 'open_kfid', None)
             user_id = getattr(msg, 'external_userid', msg.source)
             # 异步处理消息
