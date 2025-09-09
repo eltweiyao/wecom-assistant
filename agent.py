@@ -52,7 +52,7 @@ agent = create_openai_tools_agent(llm, all_tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
 
 # 示例调用函数
-async def invoke_agent(user_input: str):
+async def invoke_agent(user_input: list):
     """调用 Agent 并获取回复"""
     # 暂时不处理历史消息，每次都是新会话
     response = await agent_executor.ainvoke({

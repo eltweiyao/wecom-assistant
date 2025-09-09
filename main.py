@@ -7,12 +7,29 @@ from wechatpy.exceptions import InvalidSignatureException
 from wechatpy.utils import to_text
 
 import config
-from wecom_handler import crypto, client, get_media_url
+from wecom_handler import crypto, client, get_media_url, sync_kf_messages, send_kf_message
 from agent import invoke_agent
 
 app = FastAPI()
 
-async def process_message(user_input: str, user_id: str, agent_id: str):
+
+def extract_content(msg, output_contents: list):
+    user_id = getattr(msg, 'external_userid', msg.source)
+    if msg.type == 'text':
+        output_contents.append(f"{user_id}发送了一条消息，content是: {msg.content}")
+    elif msg.type in ['image', 'video', 'voice', 'file']:
+        # 获取媒体文件的临时 URL
+        media_id = msg.media_id
+        media_url = get_media_url(media_id)
+        # 格式化输入，让 Agent 知道这是一个媒体文件
+        output_contents.append(f"{user_id}发送了一个{msg.type}，URL是: {media_url}")
+        print(f"--- Generated Media URL: {media_url} ---")
+    elif msg.type == 'merged_msg':
+        merged_msg_list = getattr(msg, 'merged_msg', [])
+        [extract_content(msg, output_contents) for msg in merged_msg_list]
+
+
+async def process_messages(user_input: list, user_id: str, agent_id: str, open_kfid: str):
     """
     这个函数在后台运行，处理所有耗时操作。
     """
@@ -20,21 +37,21 @@ async def process_message(user_input: str, user_id: str, agent_id: str):
         print(f"--- [Background Task] Started for user: {user_id} ---")
         print(f"--- [Background Task] Input: {user_input[:100]}... ---")  # 日志截断，避免过长
 
-        # 1. 调用 Agent 获取智能回复 (这是主要耗时操作)
+        # 调用 Agent 获取智能回复 (这是主要耗时操作)
         agent_response = await invoke_agent(user_input)
-
         print(f"--- [Background Task] Agent Response: {agent_response} ---")
-
-        # 2. 将 Agent 的回复通过企业微信 API 发送给用户
-        client.message.send_text(agent_id, user_id, agent_response)
-
+        # 将消息返回给 用户
+        if open_kfid:
+            send_kf_message(open_kfid, user_id, agent_response)
+        else:
+            client.message.send_text(agent_id, user_id, agent_response)
         print(f"--- [Background Task] Sent response to user: {user_id} ---")
-
     except Exception as e:
         # 在后台任务中也进行异常处理，避免后台任务崩溃
         print(f"--- [Background Task Error] An error occurred: {e} ---")
         # 可以考虑在这里发送一条错误提示给用户
         client.message.send_text(agent_id, user_id, "抱歉，处理你的消息时遇到了内部错误。")
+
 
 @app.api_route(
     "/wechat-agent-callback",  # 定义你的回调路径
@@ -71,28 +88,32 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
             # 解析 XML 消息为 wechatpy 的消息对象
             msg = parse_message(decrypted_message)
             print(f"--- [Received Message] Type: {msg.type}, User: {msg.source} ---")
+            open_kfid = getattr(msg, 'open_kfid', None)
+            user_id = getattr(msg, 'external_userid', msg.source)
             # 异步处理消息
-            if msg.type == 'text':
-                user_input = f"用户发送了一条消息，content是: {msg.content}"
-            elif msg.type in ['image', 'video', 'voice', 'file']:
-                # 获取媒体文件的临时 URL
-                media_id = msg.media_id
-                media_url = get_media_url(media_id)
-                # 格式化输入，让 Agent 知道这是一个媒体文件
-                user_input = f"用户发送了一个{msg.type}，URL是: {media_url}"
-                print(f"--- Generated Media URL: {media_url} ---")
+            user_input_contents = []
+            if msg.type == 'event':
+                # 客服场景下的事件，通常带有 open_kfid 和 token
+                token = getattr(msg, 'token', None)
+                # 只有带 token 的事件才处理，这通常是用户进入会话等需要拉取上下文的事件
+                if token:
+                    # 1. 同步消息
+                    msg_list = sync_kf_messages(open_kfid, token)
+                    # 2. 格式化历史消息为 LLM 的输入
+                    [extract_content(msg, user_input_contents) for msg in msg_list]
+                else:
+                    # 如果是没有 token 的事件，直接忽略，不处理
+                    print(f"--- [Event] Ignored event of type '{getattr(msg, 'event', 'unknown')}' with no token. ---")
+                    return Response(status_code=200)
+            elif msg.type in ['image', 'video', 'voice', 'file', 'text']:
+                extract_content(msg, user_input_contents)
             else:
                 # 其他类型的消息暂不处理，直接回复
                 client.message.send_text(config.WECOM_AGENT_ID, msg.source, "我暂时无法处理这种类型的消息。")
                 return Response(status_code=200)
 
             # 异步处理消息
-            background_tasks.add_task(  # <-- 修改点 3
-                process_message,
-                user_input=user_input,
-                user_id=msg.source,
-                agent_id=config.WECOM_AGENT_ID
-            )
+            background_tasks.add_task(process_messages, user_input_contents, user_id, config.WECOM_AGENT_ID, open_kfid)
 
             # 立即返回 200 OK 响应给企业微信服务器
             print(f"--- [Immediate Response] Sent 200 OK for user: {msg.source}. Task queued. ---")

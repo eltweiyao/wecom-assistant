@@ -40,8 +40,8 @@ def get_media_content_from_url(media_url: str) -> str:
 
         # 2. 将二进制内容编码为 Base64
         # 为了效率，我们只读取前 10MB 的数据，防止文件过大
-        #max_size = 10 * 1024 * 1024  # 10MB
-        #content = response.raw.read(max_size)
+        # max_size = 10 * 1024 * 1024  # 10MB
+        # content = response.raw.read(max_size)
         content = response.raw.read()
         base64_encoded_content = base64.b64encode(content).decode("utf-8")
 

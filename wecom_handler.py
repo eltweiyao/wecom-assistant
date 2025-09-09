@@ -26,3 +26,66 @@ def get_media_url(media_id: str) -> str:
     """
     access_token = client.access_token
     return f"https://qyapi.weixin.qq.com/cgi-bin/media/get?access_token={access_token}&media_id={media_id}"
+
+
+def sync_kf_messages(open_kfid: str, token: str) -> list:
+    """
+    调用企业微信客服消息同步接口，获取最近的聊天记录。
+
+    :param open_kfid: 客服帐号ID
+    :param token: 回调事件中携带的 'Token'，用于定位消息位置
+    :return: 消息列表，如果失败则返回空列表
+    """
+    if not token:
+        print("Sync kf messages call ignored due to empty token.")
+        return []
+
+    try:
+        print(f"Syncing messages for open_kfid: {open_kfid}")
+        # wechatpy 的 client.post 会自动处理 access_token
+        response = client.post(
+            "kf/sync_msg",
+            data={
+                "open_kfid": open_kfid,
+                "token": token
+            }
+        )
+        # wechatpy 会在 API 返回错误码时自动抛出异常，所以这里无需检查 errcode
+        msg_list = response.get("msg_list", [])
+        print(f"Successfully synced {len(msg_list)} messages.")
+        # 获取最新的会话消息
+        latest_msg_list = []
+        for msg in reversed(msg_list):
+            if msg.type == 'event':
+                if msg.event == 'enter_session':
+                    break
+                else:
+                    continue
+            latest_msg_list.append(msg)
+
+        return latest_msg_list.reverse() or []
+    except Exception as e:
+        print(f"Failed to sync kf messages: {e}")
+        return []
+
+def send_kf_message(open_kfid: str, touser: str, msg_content: str):
+    """
+    发送客服消息。
+
+    :param open_kfid: 客服帐号ID
+    :param touser: 接收消息的成员ID
+    :param msg_content: 消息内容
+    :return: 发送结果
+    """
+    response = client.post(
+        "kf/send_msg",
+        data={
+            "open_kfid": open_kfid,
+            "touser": touser,
+            "msgtype": "text",
+            "text": {
+                "content": msg_content
+            }
+        }
+    )
+    print(f"Sent kf message: {response}")
