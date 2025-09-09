@@ -89,13 +89,13 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
             # 解析 XML 消息为 wechatpy 的消息对象
             msg = parse_message(decrypted_message)
             print(f"--- [Received Message] Type: {msg.type}，Msg:{msg} ---")
-            open_kf_id = getattr(msg, 'OpenKfId', None)
+            open_kf_id = getattr(msg, 'open_kf_id', None)
             user_id = msg.source
             # 异步处理消息
             user_input_contents = []
             if msg.type == 'event':
                 # 客服场景下的事件，通常带有 open_kf_id 和 token
-                token = getattr(msg, 'Token', None)
+                token = getattr(msg, 'token', None)
                 # 只有带 token 的事件才处理，这通常是用户进入会话等需要拉取上下文的事件
                 if token:
                     # 1. 同步消息

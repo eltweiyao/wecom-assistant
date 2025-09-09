@@ -2,6 +2,7 @@ from wechatpy.enterprise import WeChatClient, events
 from wechatpy.enterprise.crypto import WeChatCrypto
 from wechatpy.enterprise.events import register_event
 from wechatpy.events import BaseEvent
+from wechatpy.fields import StringField
 
 import config
 
@@ -101,3 +102,5 @@ class KfMsgOrEvent(BaseEvent):
     https://qydev.weixin.qq.com/wiki/index.php?title=接收事件#.E6.88.90.E5.91.98.E5.85.B3.E6.B3.A8.2F.E5.8F.96.E6.B6.88.E5.85.B3.E6.B3.A8.E4.BA.8B.E4.BB.B6
     """
     event = 'kf_msg_or_event'
+    token = StringField('Token')
+    open_kf_id = StringField('OpenKfId')
