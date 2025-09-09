@@ -35,7 +35,7 @@ async def process_messages(user_input: list, user_id: str, agent_id: str, open_k
     """
     try:
         print(f"--- [Background Task] Started for user: {user_id} ---")
-        print(f"--- [Background Task] Input: {user_input[:100]}... ---")  # 日志截断，避免过长
+        print(f"--- [Background Task] Input: {user_input}... ---")  # 日志截断，避免过长
 
         # 调用 Agent 获取智能回复 (这是主要耗时操作)
         agent_response = await invoke_agent(user_input)
@@ -101,8 +101,17 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                     # 1. 同步消息
                     msg_list = sync_kf_messages(open_kf_id, token)
                     user_id = msg_list[-1]['external_userid']
+                    # 获取最新的会话消息
+                    latest_msg_list = []
+                    for msg in reversed(msg_list):
+                        if msg['msgtype'] == 'event':
+                            if msg['event_type'] == 'enter_session':
+                                break
+                            else:
+                                continue
+                        latest_msg_list.append(msg)
                     # 2. 格式化历史消息为 LLM 的输入
-                    [extract_content(msg, user_input_contents) for msg in msg_list]
+                    [extract_content(msg, user_input_contents) for msg in latest_msg_list[::-1]]
                 else:
                     # 如果是没有 token 的事件，直接忽略，不处理
                     print(f"--- [Event] Ignored event of type '{getattr(msg, 'event', 'unknown')}' with no token. ---")

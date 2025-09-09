@@ -59,17 +59,7 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
         msg_list = response.get("msg_list", [])
         print(f"Successfully synced {len(msg_list)} messages.")
         print(f"msg_list: {msg_list}")
-        # 获取最新的会话消息
-        latest_msg_list = []
-        for msg in reversed(msg_list):
-            if msg['msgtype'] == 'event':
-                if msg['event_type'] == 'enter_session':
-                    break
-                else:
-                    continue
-            latest_msg_list.append(msg)
-
-        return latest_msg_list[::-1]
+        return msg_list
     except Exception as e:
         print(f"Failed to sync kf messages: {e}")
         return []
