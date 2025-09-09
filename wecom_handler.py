@@ -57,12 +57,12 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
         # wechatpy 会在 API 返回错误码时自动抛出异常，所以这里无需检查 errcode
         msg_list = response.get("msg_list", [])
         print(f"Successfully synced {len(msg_list)} messages.")
-        print(f"{msg_list}")
+        print(f"msg_list: {msg_list}")
         # 获取最新的会话消息
         latest_msg_list = []
         for msg in reversed(msg_list):
-            if msg.msgtype == 'event':
-                if msg.event_type == 'enter_session':
+            if msg['msgtype'] == 'event':
+                if msg['event_type'] == 'enter_session':
                     break
                 else:
                     continue
@@ -105,3 +105,6 @@ class KfMsgOrEvent(BaseEvent):
     event = 'kf_msg_or_event'
     token = StringField('Token')
     open_kf_id = StringField('OpenKfId')
+
+if __name__ == '__main__':
+    sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENC9dwENX5A5GTZjRrXN5zeX5CcjN4HMAmdfZ6rZkjEK821')

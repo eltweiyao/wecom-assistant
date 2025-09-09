@@ -15,11 +15,11 @@ app = FastAPI()
 
 def extract_content(msg, output_contents: list):
     user_id = getattr(msg, 'sender_name', getattr(msg, 'external_userid', msg.source))
-    if msg.type == 'text':
-        output_contents.append(f"{user_id}发送了一条消息，content是: {msg.content}")
-    elif msg.type in ['image', 'video', 'voice', 'file']:
+    if msg['msgtype'] == 'text':
+        output_contents.append(f"{user_id}发送了一条消息，content是: {msg['text']['content']}")
+    elif msg['msgtype'] in ['image', 'video', 'voice', 'file']:
         # 获取媒体文件的临时 URL
-        media_id = msg.media_id
+        media_id = msg['media_id']
         media_url = get_media_url(media_id)
         # 格式化输入，让 Agent 知道这是一个媒体文件
         output_contents.append(f"{user_id}发送了一个{msg.type}，URL是: {media_url}")
@@ -107,8 +107,10 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                     # 如果是没有 token 的事件，直接忽略，不处理
                     print(f"--- [Event] Ignored event of type '{getattr(msg, 'event', 'unknown')}' with no token. ---")
                     return Response(status_code=200)
-            elif msg.type in ['image', 'video', 'voice', 'file', 'text']:
-                extract_content(msg, user_input_contents)
+            elif msg.type == 'text':
+                user_input_contents.append(f"{user_id}发送了一条消息，content是: {msg.content}")
+            elif msg.type in ['image', 'video', 'voice', 'file']:
+                user_input_contents.append(f"{user_id}发送了一个{msg.type}，URL是: {get_media_url(msg.media_id)}")
             else:
                 # 其他类型的消息暂不处理，直接回复
                 client.message.send_text(config.WECOM_AGENT_ID, msg.source, "我暂时无法处理这种类型的消息。")
