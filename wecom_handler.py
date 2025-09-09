@@ -1,5 +1,8 @@
-from wechatpy.enterprise import WeChatClient
+from wechatpy.enterprise import WeChatClient, events
 from wechatpy.enterprise.crypto import WeChatCrypto
+from wechatpy.enterprise.events import register_event
+from wechatpy.fields import IntegerField
+
 import config
 
 # 1. 初始化企业微信 API 客户端
@@ -89,3 +92,13 @@ def send_kf_message(open_kfid: str, touser: str, msg_content: str):
         }
     )
     print(f"Sent kf message: {response}")
+
+@register_event('kf_msg_or_event')
+class UnsubscribeEvent(events.UnsubscribeEvent):
+    """
+    客服消息或事件
+    详情请参阅
+    https://qydev.weixin.qq.com/wiki/index.php?title=接收事件#.E6.88.90.E5.91.98.E5.85.B3.E6.B3.A8.2F.E5.8F.96.E6.B6.88.E5.85.B3.E6.B3.A8.E4.BA.8B.E4.BB.B6
+    """
+    agent = IntegerField('AgentID', 0)
+    event = 'unsubscribe'
