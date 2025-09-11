@@ -8,8 +8,8 @@ from wechatpy.exceptions import InvalidSignatureException
 from wechatpy.utils import to_text
 
 import config
-from wecom_handler import crypto, client, get_media_url, sync_kf_messages, send_kf_message
 from agent import invoke_agent
+from wecom_handler import crypto, client, get_media_url, sync_kf_messages, send_kf_message
 
 app = FastAPI()
 
@@ -146,3 +146,8 @@ if __name__ == "__main__":
     # output_lines = []
     # [extract_content(msg, output_lines) for msg in latest_msg_list]
     # print(output_lines)
+
+# 你可以先独立测试RAG链
+# if __name__ == '__main__':
+#     question = "我在高速车坏了怎么办"
+#     asyncio.run(invoke_agent([{"input": question}]))

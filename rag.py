@@ -76,9 +76,4 @@ rag_chain = (
 
 
 
-# 你可以先独立测试RAG链
-if __name__ == '__main__':
-    question = "节假日高速免费吗？"
-    response = rag_chain.invoke(question)
-    print(f"问题: {question}")
-    print(f"回答: {response}")
+
