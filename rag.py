@@ -53,7 +53,6 @@ template = """
 问题: {question}
 """
 prompt = ChatPromptTemplate.from_template(template)
-llm = agent.llm
 
 # 从检索到的文档中提取元数据里的answer'
 def format_docs(docs):
@@ -63,7 +62,7 @@ def format_docs(docs):
 rag_chain = (
         {"context": retriever | format_docs, "question": RunnablePassthrough()}
         | prompt
-        | llm
+        | agent.llm
         | StrOutputParser()
 )
 
