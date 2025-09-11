@@ -107,6 +107,8 @@ def highway_knowledge_retriever(query: str) -> str:
     # 步骤 a: 调用retriever获取相关文档
     retrieved_docs = rag.retriever.invoke(query)
 
+    print(f"--- Retrieved {len(retrieved_docs)} documents for query: {query} ---")
+    print(f"--- Retrieved documents: {retrieved_docs} ---")
     if not retrieved_docs:
         return "知识库中没有找到相关信息。"
 
