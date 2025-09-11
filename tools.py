@@ -121,4 +121,4 @@ def highway_knowledge_retriever(query: str) -> str:
 
 
 # 保持这个列表不变，Agent 会自动引用上面的 @tool 函数
-all_tools = [get_media_content_from_url]
+all_tools = [get_media_content_from_url, highway_knowledge_retriever]

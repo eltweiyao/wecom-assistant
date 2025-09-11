@@ -42,6 +42,7 @@ embeddings = DashScopeEmbeddings(
 text = "This is a test document."
 
 vector_store = FAISS.from_documents(documents, embeddings)
+print("--- 创建向量数据库成功 ---")
 retriever = vector_store.as_retriever()
 
 # --- 4. 运行RAG链 ---
