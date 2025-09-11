@@ -1,16 +1,13 @@
 import pandas as pd
-from langchain_community.llms.tongyi import Tongyi
+
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import DashScopeEmbeddings
-import dashscope
 
 import agent
-import config
 
 #1. 准备和加载数据
 df = pd.read_excel("data/出行信息服务在线客服知识库.xlsx")
