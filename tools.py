@@ -5,6 +5,7 @@ from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 import config
+import rag
 
 # 初始化一个专门用于视觉分析的 LLM 客户端
 # 我们在这里单独初始化，因为它使用了与主 Agent 不同的模型
@@ -96,6 +97,26 @@ def get_media_content_from_url(media_url: str) -> str:
         error_message = f"分析媒体内容时发生未知错误: {e}"
         print(f"--- [Tool Error] {error_message} ---")
         return error_message
+
+
+@tool
+def highway_knowledge_retriever(query: str) -> str:
+    """
+    当用户询问关于高速公路的规定、政策、收费、应急处理等专业知识时，使用此工具来获取相关的原始知识文档。
+    此工具会返回最相关的知识片段，而不是直接的答案。
+    """
+    # 步骤 a: 调用retriever获取相关文档
+    retrieved_docs = rag.retriever.invoke(query)
+
+    if not retrieved_docs:
+        return "知识库中没有找到相关信息。"
+
+    # 步骤 b: 从文档中提取原始上下文并格式化
+    # 注意：这里我们返回metadata中的'answer'，因为我们之前的数据结构是这样设计的。
+    # 这完全没问题，这里的“原始上下文”就是指我们存放在answer里的标准答案文本。
+    context = "\n\n".join(doc.metadata['answer'] for doc in retrieved_docs)
+
+    return context
 
 
 # 保持这个列表不变，Agent 会自动引用上面的 @tool 函数
