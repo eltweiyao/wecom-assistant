@@ -1,4 +1,3 @@
-# tools.py
 import base64
 import requests
 from langchain_core.tools import tool

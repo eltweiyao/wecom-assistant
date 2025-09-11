@@ -1,3 +1,4 @@
+requests
 langchain-community
 langchain-core
 pandas

@@ -6,8 +6,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_openai import ChatOpenAI
 
-import agent
+import config
 
 #1. 准备和加载数据
 df = pd.read_excel("data/出行信息服务在线客服知识库.xlsx")
@@ -58,11 +59,16 @@ prompt = ChatPromptTemplate.from_template(template)
 def format_docs(docs):
     # 从每个文档的metadata中提取'answer'字段，并用换行符连接
     return "\n\n".join(doc.metadata['answer'] for doc in docs)
-
+llm = ChatOpenAI(
+    model=config.LLM_MODEL_NAME,
+    api_key=config.OPENAI_API_KEY,
+    base_url=config.OPENAI_API_BASE,
+    temperature=0.7,
+)
 rag_chain = (
         {"context": retriever | format_docs, "question": RunnablePassthrough()}
         | prompt
-        | agent.llm
+        | llm
         | StrOutputParser()
 )
 
