@@ -1,6 +1,6 @@
 # Test your FastAPI endpoints
 
-GET http://127.0.0.1:8000/
+GET http://api.7x24hub.online:6579/wecom-assistant/wechat-agent-callback
 Accept: application/json
 
 ###

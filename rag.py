@@ -72,8 +72,3 @@ rag_chain = (
         | llm
         | StrOutputParser()
 )
-
-
-
-
-

@@ -12,3 +12,4 @@ lxml
 cryptography
 openpyxl
 dashscope
+pdfplumber

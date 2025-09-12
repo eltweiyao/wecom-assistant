@@ -1,4 +1,6 @@
 import base64
+
+import pdfplumber
 import requests
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage
@@ -120,5 +122,34 @@ def highway_knowledge_retriever(query: str) -> str:
     return context
 
 
+# 解析绿通货物及其别名名单
+def read_green_channel_goods(path: str) -> list:
+    goods = []
+    with pdfplumber.open(path) as pdf:
+        for page in pdf.pages:
+            tables = page.extract_tables()
+            for table in tables:
+                for row in table:
+                    if row[0] != "类别":
+                        goods.append(row[1])
+                        goods.extend(row[2].replace("\n", "").split("、"))
+    return goods
+
+
+green_channel_goods = read_green_channel_goods("data/P020230119517474576854.pdf")
+green_channel_goods.extend(read_green_channel_goods("data/P020230119517474781161.pdf"))
+
+
+@tool
+def check_green_channel_status(item_name: str) -> bool:
+    """
+    一个能处理别名的智能工具，用于检查货物是否在绿通名单上。
+    """
+    is_on_list = item_name in green_channel_goods
+    print(f"查询: '{item_name}' -> 结果: {is_on_list}")
+
+    return is_on_list
+
+
 # 保持这个列表不变，Agent 会自动引用上面的 @tool 函数
-all_tools = [get_media_content_from_url, highway_knowledge_retriever]
+all_tools = [get_media_content_from_url, highway_knowledge_retriever, check_green_channel_status]
