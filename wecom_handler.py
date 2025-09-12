@@ -51,8 +51,7 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
             "kf/sync_msg",
             data={
                 "open_kfid": open_kfid,
-                "token": token,
-                "limit": 20,
+                "token": token
             }
         )
         # wechatpy 会在 API 返回错误码时自动抛出异常，所以这里无需检查 errcode
