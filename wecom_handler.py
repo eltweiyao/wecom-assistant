@@ -34,7 +34,7 @@ def get_media_url(media_id: str) -> str:
 
 def sync_kf_messages(open_kfid: str, token: str) -> list:
     """
-    调用企业微信客服消息同步接口，获取最近的聊天记录。
+    调用企业微信客服消息同步接口，获取最近5条的聊天记录。
 
     :param open_kfid: 客服帐号ID
     :param token: 回调事件中携带的 'Token'，用于定位消息位置
@@ -64,7 +64,7 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
             if msg['msgtype'] == 'event':
                 if msg['event']['event_type'] == 'enter_session':
                     break
-        return latest_msg_list[-5:]
+        return latest_msg_list[:5][::-1]
     except Exception as e:
         print(f"Failed to sync kf messages: {e}")
         return []

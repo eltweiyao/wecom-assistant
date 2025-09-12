@@ -142,12 +142,11 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
 if __name__ == "__main__":
     # 启动服务器
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    # latest_msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENCFiHvZGBiGSvCo6T1h8soJkERuUupXoSqhVEpB4MWBA1j')
-    # output_lines = []
-    # [extract_content(msg, output_lines) for msg in latest_msg_list]
-    # print(output_lines)
-
-# 你可以先独立测试RAG链
-# if __name__ == '__main__':
-#     question = "我在高速车坏了怎么办"
-#     asyncio.run(invoke_agent([{"input": question}]))
+    # user_input_contents = []
+    # msg_list = sync_kf_messages('wk54emFgAAzu4SxidhEK4Fk5MRPQygTw', 'ENC9xiGTgQZ2XqHH3oAvKwpxT8iQZYvUYjmjEbkphmTxDNS')
+    # user_id = msg_list[-1]['external_userid']
+    # 获取最新的会话消息
+    #
+    # 2. 格式化历史消息为 LLM 的输入 当前默认只取最新一条
+    # [extract_content(msg, user_input_contents) for msg in msg_list[-1:]]
+    # print(user_input_contents)
