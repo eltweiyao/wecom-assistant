@@ -28,7 +28,7 @@ def extract_content(msg, output_contents: list, sender_name: str = None):
         print(f"--- Generated Media URL: {media_url} ---")
     elif msg['msgtype'] == 'event' and msg['event']['event_type'] == 'enter_session':
         user_id = msg['event']['external_userid']
-        output_contents.append(f"{user_id} 进入会话")
+        output_contents.append(f"{user_id} 发送了一条消息，content是: 你好！")
     elif msg['msgtype'] == 'merged_msg':
         merged_msg_list = msg['merged_msg']['item']
         [extract_content(json.loads(item['msg_content']), output_contents, item['sender_name']) for item in merged_msg_list]
@@ -109,7 +109,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                     # 获取最新的会话消息
 
                     # 2. 格式化历史消息为 LLM 的输入 当前默认只取最新一条
-                    [extract_content(msg, user_input_contents) for msg in msg_list[:1]]
+                    [extract_content(msg, user_input_contents) for msg in msg_list[:-1]]
                 else:
                     # 如果是没有 token 的事件，直接忽略，不处理
                     print(f"--- [Event] Ignored event of type '{getattr(msg, 'event', 'unknown')}' with no token. ---")
