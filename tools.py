@@ -157,7 +157,19 @@ green_channel_categories = [
     "仔猪",
     "蜜蜂",
     "新鲜家禽肉和家畜肉",
-    "新鲜的蛋类",
+    "新鲜的鸡蛋",
+    "新鲜的鸭蛋",
+    "新鲜的鹅蛋",
+    "新鲜的鹌鹑蛋",
+    "新鲜的鸽蛋",
+    "新鲜的火鸡蛋",
+    "新鲜的珍珠鸡蛋",
+    "新鲜的雉鸡蛋",
+    "新鲜的鹧鸪蛋",
+    "新鲜的番鸭蛋",
+    "新鲜的绿头鸭蛋",
+    "新鲜的鸸鹋蛋",
+    "新鲜的鸵鸟蛋",
     "生鲜乳"]
 
 @tool
@@ -179,7 +191,7 @@ def check_green_channel_status(item_name: str) -> bool:
         print("--- Sending data to llm for category... ---")
         category = green_channel_llm.invoke([prompt_text])
         print(f"--- Category identified: {category} ---")
-        is_on_list = category in green_channel_categories
+        is_on_list = category.content in green_channel_categories
         print(f"查询: '{item_name}' -> 识别类别: '{category}' -> 识别结果: {is_on_list}")
 
     return is_on_list
