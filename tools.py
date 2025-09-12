@@ -17,6 +17,12 @@ try:
         base_url=config.OPENAI_API_BASE,
         temperature=0,  # 视觉分析任务通常需要更确定的结果
     )
+    green_channel_llm = ChatOpenAI(
+        model=config.LLM_MODEL_NAME,
+        api_key=config.OPENAI_API_KEY,
+        base_url=config.OPENAI_API_BASE,
+        temperature=0,  # 视觉分析任务通常需要更确定的结果
+    )
 except ImportError:
     print("无法导入 ChatOpenAI，请确保 langchain-openai 已安装")
     vision_llm = None
@@ -139,6 +145,20 @@ def read_green_channel_goods(path: str) -> list:
 green_channel_goods = read_green_channel_goods("data/P020230119517474576854.pdf")
 green_channel_goods.extend(read_green_channel_goods("data/P020230119517474781161.pdf"))
 
+green_channel_categories = [
+    "鱼类",
+    "虾类",
+    "贝类",
+    "蟹类",
+    "海带",
+    "紫菜",
+    "海蜇",
+    "海参",
+    "仔猪",
+    "蜜蜂",
+    "新鲜家禽肉和家畜肉",
+    "新鲜的蛋类",
+    "生鲜乳"]
 
 @tool
 def check_green_channel_status(item_name: str) -> bool:
@@ -147,6 +167,20 @@ def check_green_channel_status(item_name: str) -> bool:
     """
     is_on_list = item_name in green_channel_goods
     print(f"查询: '{item_name}' -> 结果: {is_on_list}")
+    if not is_on_list:
+        prompt_text = f"""
+        请将以下物品归入最合适的类别中。
+        可选的类别有：{green_channel_categories}
+
+        物品："{item_name}"
+
+        请只回答一个类别名称，如果有你不认识的物品无法归类，请回答“未知”，不要包含任何解释或多余的文字。。
+        """
+        print("--- Sending data to llm for category... ---")
+        category = green_channel_llm.invoke([prompt_text])
+        print(f"--- Category identified: {category} ---")
+        is_on_list = category in green_channel_categories
+        print(f"查询: '{item_name}' -> 识别类别: '{category}' -> 识别结果: {is_on_list}")
 
     return is_on_list
 
