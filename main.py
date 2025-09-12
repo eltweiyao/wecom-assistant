@@ -109,7 +109,7 @@ async def wechat_callback(request: Request, background_tasks: BackgroundTasks):
                     # 获取最新的会话消息
 
                     # 2. 格式化历史消息为 LLM 的输入 当前默认只取最新一条
-                    [extract_content(msg, user_input_contents) for msg in msg_list[:-1]]
+                    [extract_content(msg, user_input_contents) for msg in msg_list[-1:]]
                 else:
                     # 如果是没有 token 的事件，直接忽略，不处理
                     print(f"--- [Event] Ignored event of type '{getattr(msg, 'event', 'unknown')}' with no token. ---")
