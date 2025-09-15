@@ -1,3 +1,4 @@
+from langchain_community.callbacks import get_openai_callback
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -11,6 +12,7 @@ llm = ChatOpenAI(
     api_key=config.OPENAI_API_KEY,
     base_url=config.OPENAI_API_BASE,
     temperature=0.7,
+    streaming=False
 )
 
 # 2. 定义系统提示词 (与 n8n 中的完全一致)
@@ -95,8 +97,14 @@ agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
 async def invoke_agent(user_input: list):
     """调用 Agent 并获取回复"""
     # 暂时不处理历史消息，每次都是新会话
-    response = await agent_executor.ainvoke({
-        "input": user_input,
-        "chat_history": []
-    })
-    return response.get("output", "抱歉，我无法回答。")
+    with get_openai_callback() as cb:
+
+        response = await agent_executor.ainvoke({
+            "input": user_input,
+            "chat_history": []
+        })
+        # 回调对象 `cb` 会自动累积所有内部发生的LLM调用的Token
+        print("\n\n" + "=" * 50)
+        print(f"执行完成！\n{cb}")
+        print("=" * 50)
+        return response.get("output", "抱歉，我无法回答。")
