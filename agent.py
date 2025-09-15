@@ -1,9 +1,11 @@
 from langchain_community.callbacks import get_openai_callback
+from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 import config
+from agent_callback_handlers import TokenUsageCallbackHandler
 from tools import all_tools
 
 # 1. 初始化大语言模型
@@ -97,14 +99,11 @@ agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
 async def invoke_agent(user_input: list):
     """调用 Agent 并获取回复"""
     # 暂时不处理历史消息，每次都是新会话
-    with get_openai_callback() as cb:
-
-        response = await agent_executor.ainvoke({
-            "input": user_input,
-            "chat_history": []
-        })
-        # 回调对象 `cb` 会自动累积所有内部发生的LLM调用的Token
-        print("\n\n" + "=" * 50)
-        print(f"执行完成！\n{cb}")
-        print("=" * 50)
-        return response.get("output", "抱歉，我无法回答。")
+    token_usage_callback_handler = TokenUsageCallbackHandler()
+    response = await agent_executor.ainvoke({
+        "input": user_input,
+        "chat_history": []
+    }, config=RunnableConfig(callbacks=[token_usage_callback_handler]))
+    print("本次调用的Token消耗统计:")
+    print(token_usage_callback_handler)
+    return response.get("output", "抱歉，我无法回答。")
