@@ -101,7 +101,6 @@ async def invoke_agent(user_input: list):
     # 暂时不处理历史消息，每次都是新会话
     token_usage_callback_handler = TokenUsageCallbackHandler()
     detailed_timing_callback_handler = DetailedTimingCallbackHandler()
-    detailed_timing_callback_handler.agent_name = agent_executor.agent.name
     response = await agent_executor.ainvoke({
         "input": user_input,
         "chat_history": []
