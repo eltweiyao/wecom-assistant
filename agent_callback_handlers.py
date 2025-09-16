@@ -81,7 +81,7 @@ class DetailedTimingCallbackHandler(BaseCallbackHandler):
             self, serialized: Dict[str, Any], inputs: Dict[str, Any], *, run_id: uuid.UUID, **kwargs: Any
     ) -> None:
         """在 Agent Executor 主链开始时被调用"""
-        if serialized.get("name") == self.agent_name:
+        if serialized and serialized.get("name") == self.agent_name:
             print(f"\n{'=' * 20} {self.agent_name} Agent Start {'=' * 20}")
             self.start_times[run_id] = time.perf_counter()
 
