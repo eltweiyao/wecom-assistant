@@ -34,7 +34,7 @@ def extract_content(msg, output_contents: list, sender_name: str = None):
         [extract_content(json.loads(item['msg_content']), output_contents, item['sender_name']) for item in merged_msg_list]
 
 
-async def process_messages(user_input: list, user_id: str, agent_id: str, open_kfid: str):
+def process_messages(user_input: list, user_id: str, agent_id: str, open_kfid: str):
     """
     这个函数在后台运行，处理所有耗时操作。
     """
@@ -43,7 +43,7 @@ async def process_messages(user_input: list, user_id: str, agent_id: str, open_k
         print(f"--- [Background Task] Input: {user_input}... ---")  # 日志截断，避免过长
 
         # 调用 Agent 获取智能回复 (这是主要耗时操作)
-        agent_response = await invoke_agent(user_input)
+        agent_response = invoke_agent(user_input)
         print(f"--- [Background Task] Agent Response: {agent_response} ---")
         # 将消息返回给 用户
         if open_kfid:

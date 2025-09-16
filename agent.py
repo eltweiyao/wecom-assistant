@@ -96,12 +96,12 @@ agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
 
 
 # 示例调用函数
-async def invoke_agent(user_input: list):
+def invoke_agent(user_input: list):
     """调用 Agent 并获取回复"""
     # 暂时不处理历史消息，每次都是新会话
     token_usage_callback_handler = TokenUsageCallbackHandler()
     detailed_timing_callback_handler = DetailedTimingCallbackHandler()
-    response = await agent_executor.ainvoke({
+    response = agent_executor.invoke({
         "input": user_input,
         "chat_history": []
     }, config=RunnableConfig(callbacks=[token_usage_callback_handler, detailed_timing_callback_handler]))
