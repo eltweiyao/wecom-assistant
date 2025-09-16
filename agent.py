@@ -1,4 +1,3 @@
-from langchain_community.callbacks import get_openai_callback
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
