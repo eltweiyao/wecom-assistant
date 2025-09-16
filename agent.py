@@ -5,7 +5,7 @@ from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 import config
-from agent_callback_handlers import TokenUsageCallbackHandler
+from agent_callback_handlers import TokenUsageCallbackHandler, DetailedTimingCallbackHandler
 from tools import all_tools
 
 # 1. 初始化大语言模型
@@ -95,15 +95,28 @@ agent = create_openai_tools_agent(llm, all_tools, prompt)
 # 5. 创建 Agent 执行器
 agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
 
+
 # 示例调用函数
 async def invoke_agent(user_input: list):
     """调用 Agent 并获取回复"""
     # 暂时不处理历史消息，每次都是新会话
     token_usage_callback_handler = TokenUsageCallbackHandler()
+    detailed_timing_callback_handler = DetailedTimingCallbackHandler()
     response = await agent_executor.ainvoke({
         "input": user_input,
         "chat_history": []
-    }, config=RunnableConfig(callbacks=[token_usage_callback_handler]))
+    }, config=RunnableConfig(callbacks=[token_usage_callback_handler, detailed_timing_callback_handler]))
     print("本次调用的Token消耗统计:")
     print(token_usage_callback_handler)
+    summary = detailed_timing_callback_handler.get_summary()
+    print("--- 耗时汇总报告 ---")
+    for key, value in summary.items():
+        if "time" in key:
+            print(f"{key:<20}: {value:.4f} seconds")
+        else:
+            print(f"{key:<20}: {value}")
+
+    # 验证时间
+    other_time = summary['agent_total_time'] - summary['llm_total_time'] - summary['tool_total_time']
+    print(f"{'agent_overhead_time':<20}: {other_time:.4f} seconds (Agent框架本身的开销)")
     return response.get("output", "抱歉，我无法回答。")
