@@ -189,9 +189,10 @@ def check_green_channel_status(item_name: str) -> bool:
         请只回答一个类别名称，如果有你不认识的物品无法归类，请回答“未知”，不要包含任何解释或多余的文字。。
         """
         print("--- Sending data to llm for category... ---")
-        category = green_channel_llm.invoke([prompt_text])
+        response = green_channel_llm.invoke([prompt_text])
+        category = response.content
         print(f"--- Category identified: {category} ---")
-        is_on_list = category.content in green_channel_categories
+        is_on_list = category in green_channel_categories
         print(f"查询: '{item_name}' -> 识别类别: '{category}' -> 识别结果: {is_on_list}")
 
     return is_on_list
