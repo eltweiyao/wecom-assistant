@@ -1,6 +1,6 @@
 import time
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
@@ -75,14 +75,16 @@ class DetailedTimingCallbackHandler(BaseCallbackHandler):
         self.tool_total_time: float = 0.0
         self.llm_calls: int = 0
         self.tool_calls: int = 0
-        self.agent_name:str = ""
 
     def on_chain_start(
-            self, serialized: Dict[str, Any], inputs: Dict[str, Any], *, run_id: uuid.UUID, **kwargs: Any
+        self, serialized: Dict[str, Any], inputs: Dict[str, Any], *,
+        run_id: uuid.UUID, parent_run_id: Optional[uuid.UUID] = None, **kwargs: Any
     ) -> None:
-        """在 Agent Executor 主链开始时被调用"""
-        if serialized and serialized.get("name") == self.agent_name:
-            print(f"\n{'=' * 20} {self.agent_name} Agent Start {'=' * 20}")
+        """在链开始时被调用"""
+        # ********【修正点】********
+        # 通过检查 parent_run_id 是否为 None 来判断是否为最外层的 Agent Executor
+        if parent_run_id is None:
+            print(f"\n{'='*20} Agent Start (Run ID: {run_id}) {'='*20}")
             self.start_times[run_id] = time.perf_counter()
 
 
