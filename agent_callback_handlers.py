@@ -81,65 +81,65 @@ class DetailedTimingCallbackHandler(BaseCallbackHandler):
     ) -> None:
         """在 Agent Executor 主链开始时被调用"""
         # if serialized.get("name") == agent_executor.name:
-        print(f"\n{'=' * 20} Agent Start {'=' * 20}")
+        print(f"\n{'=' * 20} {serialized.get("name")} Agent Start {'=' * 20}")
         self.start_times[run_id] = time.perf_counter()
 
 
-def on_chain_end(self, outputs: Dict[str, Any], *, run_id: uuid.UUID, **kwargs: Any) -> None:
-    """在 Agent Executor 主链结束时被调用"""
-    if run_id in self.start_times:
-        start_time = self.start_times.pop(run_id)
-        end_time = time.perf_counter()
-        self.agent_total_time = end_time - start_time
-        print(f"\n{'=' * 20} Agent End {'=' * 20}")
-        print(f"Agent Total Time: {self.agent_total_time:.4f} seconds")
+    def on_chain_end(self, outputs: Dict[str, Any], *, run_id: uuid.UUID, **kwargs: Any) -> None:
+        """在 Agent Executor 主链结束时被调用"""
+        if run_id in self.start_times:
+            start_time = self.start_times.pop(run_id)
+            end_time = time.perf_counter()
+            self.agent_total_time = end_time - start_time
+            print(f"\n{'=' * 20} Agent End {'=' * 20}")
+            print(f"Agent Total Time: {self.agent_total_time:.4f} seconds")
 
 
-def on_llm_start(
-        self, serialized: Dict[str, Any], prompts: List[str], *, run_id: uuid.UUID, **kwargs: Any
-) -> None:
-    """在 LLM 调用开始时被调用"""
-    print(f"\n\t[LLM Call] Start...")
-    self.start_times[run_id] = time.perf_counter()
+    def on_llm_start(
+            self, serialized: Dict[str, Any], prompts: List[str], *, run_id: uuid.UUID, **kwargs: Any
+    ) -> None:
+        """在 LLM 调用开始时被调用"""
+        print(f"\n\t[LLM Call] Start...")
+        self.start_times[run_id] = time.perf_counter()
 
 
-def on_llm_end(self, response: LLMResult, *, run_id: uuid.UUID, **kwargs: Any) -> None:
-    """在 LLM 调用结束时被调用"""
-    if run_id in self.start_times:
-        start_time = self.start_times.pop(run_id)
-        end_time = time.perf_counter()
-        duration = end_time - start_time
-        self.llm_total_time += duration
-        self.llm_calls += 1
-        print(f"\t[LLM Call] End. Duration: {duration:.4f} seconds")
+    def on_llm_end(self, response: LLMResult, *, run_id: uuid.UUID, **kwargs: Any) -> None:
+        """在 LLM 调用结束时被调用"""
+        if run_id in self.start_times:
+            start_time = self.start_times.pop(run_id)
+            end_time = time.perf_counter()
+            duration = end_time - start_time
+            self.llm_total_time += duration
+            self.llm_calls += 1
+            print(f"\t[LLM Call] End. Duration: {duration:.4f} seconds")
 
 
-def on_tool_start(
-        self, serialized: Dict[str, Any], input_str: str, *, run_id: uuid.UUID, **kwargs: Any
-) -> None:
-    """在 Tool 调用开始时被调用"""
-    # 注意：这里的 `on_tool_start` 发生在工具的实际执行之前
-    # 我们将在 `get_word_length` 函数内部打印来更好地展示
-    self.start_times[run_id] = time.perf_counter()
+    def on_tool_start(
+            self, serialized: Dict[str, Any], input_str: str, *, run_id: uuid.UUID, **kwargs: Any
+    ) -> None:
+        """在 Tool 调用开始时被调用"""
+        # 注意：这里的 `on_tool_start` 发生在工具的实际执行之前
+        # 我们将在 `get_word_length` 函数内部打印来更好地展示
+        self.start_times[run_id] = time.perf_counter()
 
 
-def on_tool_end(self, output: str, *, run_id: uuid.UUID, **kwargs: Any) -> None:
-    """在 Tool 调用结束时被调用"""
-    if run_id in self.start_times:
-        start_time = self.start_times.pop(run_id)
-        end_time = time.perf_counter()
-        duration = end_time - start_time
-        self.tool_total_time += duration
-        self.tool_calls += 1
-        print(f"\t[Tool Timing] Tool execution and processing duration: {duration:.4f} seconds")
+    def on_tool_end(self, output: str, *, run_id: uuid.UUID, **kwargs: Any) -> None:
+        """在 Tool 调用结束时被调用"""
+        if run_id in self.start_times:
+            start_time = self.start_times.pop(run_id)
+            end_time = time.perf_counter()
+            duration = end_time - start_time
+            self.tool_total_time += duration
+            self.tool_calls += 1
+            print(f"\t[Tool Timing] Tool execution and processing duration: {duration:.4f} seconds")
 
 
-def get_summary(self) -> Dict[str, Any]:
-    """获取所有耗时的汇总信息"""
-    return {
-        "agent_total_time": self.agent_total_time,
-        "total_llm_calls": self.llm_calls,
-        "llm_total_time": self.llm_total_time,
-        "total_tool_calls": self.tool_calls,
-        "tool_total_time": self.tool_total_time
-    }
+    def get_summary(self) -> Dict[str, Any]:
+        """获取所有耗时的汇总信息"""
+        return {
+            "agent_total_time": self.agent_total_time,
+            "total_llm_calls": self.llm_calls,
+            "llm_total_time": self.llm_total_time,
+            "total_tool_calls": self.tool_calls,
+            "tool_total_time": self.tool_total_time
+        }
