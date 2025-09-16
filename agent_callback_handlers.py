@@ -75,15 +75,15 @@ class DetailedTimingCallbackHandler(BaseCallbackHandler):
         self.tool_total_time: float = 0.0
         self.llm_calls: int = 0
         self.tool_calls: int = 0
+        self.agent_name:str = ""
 
     def on_chain_start(
             self, serialized: Dict[str, Any], inputs: Dict[str, Any], *, run_id: uuid.UUID, **kwargs: Any
     ) -> None:
         """在 Agent Executor 主链开始时被调用"""
-        # if serialized.get("name") == agent_executor.name:
-        agent_name = serialized.get("name")
-        print(f"\n{'=' * 20} {agent_name} Agent Start {'=' * 20}")
-        self.start_times[run_id] = time.perf_counter()
+        if serialized.get("name") == self.agent_name:
+            print(f"\n{'=' * 20} {self.agent_name} Agent Start {'=' * 20}")
+            self.start_times[run_id] = time.perf_counter()
 
 
     def on_chain_end(self, outputs: Dict[str, Any], *, run_id: uuid.UUID, **kwargs: Any) -> None:
