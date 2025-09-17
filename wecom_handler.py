@@ -5,6 +5,8 @@ from wechatpy.events import BaseEvent
 from wechatpy.fields import StringField
 
 import config
+from logging_config import logger
+from exceptions import handle_exception, WecomException
 
 # 1. 初始化企业微信 API 客户端
 # wechatpy 会自动处理 access_token 的获取和刷新
@@ -35,18 +37,14 @@ def get_media_url(media_id: str) -> str:
 def sync_kf_messages(open_kfid: str, token: str) -> list:
     """
     调用企业微信客服消息同步接口，获取最近5条的聊天记录。
-
-    :param open_kfid: 客服帐号ID
-    :param token: 回调事件中携带的 'Token'，用于定位消息位置
-    :return: 消息列表，如果失败则返回空列表
     """
     if not token:
-        print("Sync kf messages call ignored due to empty token.")
+        logger.warning("Sync kf messages call ignored due to empty token")
         return []
 
     try:
-        print(f"Syncing messages for open_kfid: {open_kfid}")
-        # wechatpy 的 client.post 会自动处理 access_token
+        logger.debug(f"Syncing messages for open_kfid: {open_kfid}")
+        
         response = client.post(
             "kf/sync_msg",
             data={
@@ -54,10 +52,10 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
                 "token": token
             }
         )
-        # wechatpy 会在 API 返回错误码时自动抛出异常，所以这里无需检查 errcode
+        
         msg_list = response.get("msg_list", [])
-        print(f"Successfully synced {len(msg_list)} messages.")
-        # print(f"msg_list: {msg_list}")
+        logger.info(f"Successfully synced {len(msg_list)} messages", open_kfid=open_kfid)
+        
         latest_msg_list = []
         for msg in reversed(msg_list):
             latest_msg_list.append(msg)
@@ -65,31 +63,32 @@ def sync_kf_messages(open_kfid: str, token: str) -> list:
                 if msg['event']['event_type'] == 'enter_session':
                     break
         return latest_msg_list[:5][::-1]
+        
     except Exception as e:
-        print(f"Failed to sync kf messages: {e}")
+        wrapped_exception = handle_exception(e, "sync_kf_messages")
+        logger.log_exception(wrapped_exception, context="sync_kf_messages", open_kfid=open_kfid)
         return []
 
 def send_kf_message(open_kfid: str, touser: str, msg_content: str):
-    """
-    发送客服消息。
-
-    :param open_kfid: 客服帐号ID
-    :param touser: 接收消息的成员ID
-    :param msg_content: 消息内容
-    :return: 发送结果
-    """
-    response = client.post(
-        "kf/send_msg",
-        data={
-            "open_kfid": open_kfid,
-            "touser": touser,
-            "msgtype": "text",
-            "text": {
-                "content": msg_content
+    """发送客服消息。"""
+    try:
+        response = client.post(
+            "kf/send_msg",
+            data={
+                "open_kfid": open_kfid,
+                "touser": touser,
+                "msgtype": "text",
+                "text": {
+                    "content": msg_content
+                }
             }
-        }
-    )
-    print(f"Sent kf message: {response}")
+        )
+        logger.info("Kf message sent successfully", 
+                   open_kfid=open_kfid, touser=touser, response=response)
+    except Exception as e:
+        wrapped_exception = handle_exception(e, "send_kf_message")
+        logger.log_exception(wrapped_exception, context="send_kf_message", 
+                           open_kfid=open_kfid, touser=touser)
 
 @register_event('kf_msg_or_event')
 class KfMsgOrEvent(BaseEvent):

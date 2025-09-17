@@ -13,3 +13,7 @@ cryptography
 openpyxl
 dashscope
 pdfplumber
+psutil
+pydantic
+pytest
+pytest-asyncio

@@ -1,19 +1,28 @@
+import time
+from typing import List, Optional
+
 from langchain_core.runnables import RunnableConfig
-from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from pydantic import SecretStr
 
 import config
 from agent_callback_handlers import TokenUsageCallbackHandler, DetailedTimingCallbackHandler
+from llm_wrapper import ChatWithUsage
 from tools import all_tools
+from exceptions import handle_exception, LLMException, ErrorCode
+from logging_config import logger
+
+token_usage_callback_handler = TokenUsageCallbackHandler()
 
 # 1. 初始化大语言模型
-llm = ChatOpenAI(
+llm = ChatWithUsage(
     model=config.LLM_MODEL_NAME,
-    api_key=config.OPENAI_API_KEY,
+    api_key=SecretStr(config.OPENAI_API_KEY) if config.OPENAI_API_KEY else None,
     base_url=config.OPENAI_API_BASE,
     temperature=0.7,
-    streaming=False
+    streaming=False,
+    callbacks=[token_usage_callback_handler],
 )
 
 # 2. 定义系统提示词 (与 n8n 中的完全一致)
@@ -92,30 +101,80 @@ prompt = ChatPromptTemplate.from_messages(
 agent = create_openai_tools_agent(llm, all_tools, prompt)
 
 # 5. 创建 Agent 执行器
-agent_executor = AgentExecutor(agent=agent, tools=all_tools, verbose=True)
+agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=all_tools, verbose=True,
+                                                    callbacks=[token_usage_callback_handler])
 
 
-# 示例调用函数
-def invoke_agent(user_input: list):
+def invoke_agent(user_input: List[str], request_id: Optional[str] = None) -> str:
     """调用 Agent 并获取回复"""
-    # 暂时不处理历史消息，每次都是新会话
-    token_usage_callback_handler = TokenUsageCallbackHandler()
-    detailed_timing_callback_handler = DetailedTimingCallbackHandler()
-    response = agent_executor.invoke({
-        "input": user_input,
-        "chat_history": []
-    }, config=RunnableConfig(callbacks=[token_usage_callback_handler, detailed_timing_callback_handler]))
-    print("本次调用的Token消耗统计:")
-    print(token_usage_callback_handler)
-    summary = detailed_timing_callback_handler.get_summary()
-    print("--- 耗时汇总报告 ---")
-    for key, value in summary.items():
-        if "time" in key:
-            print(f"{key:<20}: {value:.4f} seconds")
+    start_time = time.time()
+    
+    if request_id:
+        logger.debug(
+            "Agent invocation started",
+            request_id=request_id,
+            input_length=len(str(user_input))
+        )
+    
+    try:
+        # 暂时不处理历史消息，每次都是新会话
+        detailed_timing_callback_handler = DetailedTimingCallbackHandler()
+        
+        response = agent_executor.invoke({
+            "input": user_input,
+            "chat_history": []
+        }, config=RunnableConfig(callbacks=[token_usage_callback_handler, detailed_timing_callback_handler]))
+        
+        # 记录Token消耗统计
+        token_stats = str(token_usage_callback_handler)
+        if token_stats and request_id:
+            logger.info(
+                "Token usage statistics",
+                request_id=request_id,
+                token_stats=token_stats
+            )
+        
+        # 记录耗时统计
+        summary = detailed_timing_callback_handler.get_summary()
+        execution_time = time.time() - start_time
+        
+        if request_id:
+            logger.log_performance_metrics({
+                "request_id": request_id,
+                "agent_total_time": summary.get('agent_total_time', 0),
+                "llm_total_time": summary.get('llm_total_time', 0),
+                "tool_total_time": summary.get('tool_total_time', 0),
+                "actual_execution_time": execution_time,
+                "llm_call_count": summary.get('llm_call_count', 0),
+                "tool_call_count": summary.get('tool_call_count', 0)
+            })
+        
+        agent_output = response.get("output", "抱歉，我无法回答。")
+        
+        if request_id:
+            logger.info(
+                "Agent invocation completed successfully",
+                request_id=request_id,
+                execution_time=execution_time,
+                output_length=len(agent_output)
+            )
+        
+        return agent_output
+        
+    except Exception as e:
+        execution_time = time.time() - start_time
+        wrapped_exception = handle_exception(e, "agent_invocation", None)
+        
+        if request_id:
+            logger.log_exception(
+                wrapped_exception,
+                context="agent_invocation",
+                request_id=request_id,
+                execution_time=execution_time
+            )
+        
+        # 根据异常类型返回不同的用户友好消息
+        if isinstance(wrapped_exception, LLMException):
+            return wrapped_exception.user_message
         else:
-            print(f"{key:<20}: {value}")
-
-    # 验证时间
-    other_time = summary['agent_total_time'] - summary['llm_total_time'] - summary['tool_total_time']
-    print(f"{'agent_overhead_time':<20}: {other_time:.4f} seconds (Agent框架本身的开销)")
-    return response.get("output", "抱歉，我无法回答。")
+            return "抱歉，系统遇到了一些问题，请稍后再试。"
